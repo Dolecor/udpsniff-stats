@@ -1,0 +1,19 @@
+.vscode
+
+# Auto generated files
+
+# autoreconf --install
+aclocal.m4
+autom4te.cache/
+build-aux/
+configure
+config.h.in
+Makefile
+Makefile.in
+
+# configure
+build/
+
+# make install
+install/
+
