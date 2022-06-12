@@ -10,28 +10,36 @@
 
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <net/if.h>
+#include <arpa/inet.h>
 
 #include <pthread.h>
 
-typedef struct packet_info {
+#define PORTSTRLEN 6
+#define PACKET_MAX_LEN 65536
+
+/* Values that represent any value in packet filtering */
+#define ANY_IP (in_addr_t)0
+#define ANY_PORT (in_port_t)0
+
+typedef struct packet_params {
     in_addr_t src_ip;
     in_addr_t dest_ip;
     in_port_t src_port;
     in_port_t dest_port;
-} packet_info_t;
+} packet_params_t;
 
 typedef struct statistics {
-    /* packet_info_t packet_info; */
     size_t packets;
     size_t bytes;
 } statistics_t;
 
 int init_raw_socket(int *raw_socket, const char *netif, size_t netif_size);
 
-int get_packet_fields(const char *raw_packet, size_t size,
-                      packet_info_t *fields);
+int get_packet_params(const char *raw_packet, size_t size,
+                      packet_params_t *params);
 
-int check_packet_fields(const char *raw_packet, size_t size,
-                        const packet_info_t *params);
+int check_packet_params(const char *raw_packet, size_t size,
+                        const packet_params_t *filter);
 
 #endif /* COMMON_H */

@@ -21,45 +21,37 @@ int init_raw_socket(int *raw_socket, const char *netif, size_t netif_size)
     return EXIT_SUCCESS;
 }
 
-int get_packet_fields(const char *raw_packet, size_t size,
-                      packet_info_t *fields)
+int get_packet_params(const char *raw_packet, size_t size,
+                      packet_params_t *params)
 {
-    // TODO: check raw_packet, fields for NULL
+    // TODO: check raw_packet, params for NULL
 
     const struct iphdr *iph = (const struct iphdr *)raw_packet;
-    fields->dest_ip = iph->daddr;
-    fields->src_ip = iph->saddr;
+    params->dest_ip = iph->daddr;
+    params->src_ip = iph->saddr;
 
     const struct udphdr *udph =
         (const struct udphdr *)(raw_packet + sizeof(struct iphdr));
-    fields->src_port = udph->uh_sport;
-    fields->dest_port = udph->uh_dport;
+    params->src_port = udph->uh_sport;
+    params->dest_port = udph->uh_dport;
 
     return EXIT_SUCCESS;
 }
 
-/*  #include <arpa/inet.h>
- *    packet_info_t tmp;
- *    char ip_str[INET_ADDRSTRLEN];
- *
- *    get_packet_fields(raw_packet, BUFF_SIZE, &tmp);
- *
- *    printf("src_ip  : %s\n",
- *            inet_ntop(AF_INET, &tmp.src_ip, ip_str, INET_ADDRSTRLEN));
- *    printf("dest_ip : %s\n",
- *            inet_ntop(AF_INET, &tmp.dest_ip, ip_str, INET_ADDRSTRLEN));
- *    printf("\n");
- *
- *    printf("src_port  : %d\n", ntohs(tmp.src_port));
- *    printf("dest_port : %d\n", ntohs(tmp.dest_port));
- */
-
-int check_packet_fields(const char *raw_packet, size_t size,
-                        const packet_info_t *params)
+int check_packet_params(const char *raw_packet, size_t size,
+                        const packet_params_t *filter)
 {
-    // TODO:
-    // return 1 if raw_packet contains params
-    // 0 otherwise
+    packet_params_t params;
+    get_packet_params(raw_packet, size, &params);
 
-    return -1;
+#define SRC_IP params.src_ip
+#define DEST_IP params.dest_ip
+#define SRC_PORT params.src_port
+#define DEST_PORT params.dest_port
+
+    return ((SRC_IP == filter->src_ip) || (filter->src_ip == ANY_IP))
+           && ((DEST_IP == filter->dest_ip) || (filter->dest_ip == ANY_IP))
+           && ((SRC_PORT == filter->src_port) || (filter->src_port == ANY_PORT))
+           && ((DEST_PORT == filter->dest_port)
+               || (filter->dest_port == ANY_PORT));
 }
