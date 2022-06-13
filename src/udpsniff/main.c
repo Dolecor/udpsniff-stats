@@ -24,7 +24,7 @@ int main(void)
     params.src_port = htons(atoi(src_port));
     params.dest_port = htons(atoi(dest_port));
 
-    ret = run_option(opt, if_name, params);
+    ret = exec_option(opt, if_name, params);
 
     return ret;
 }

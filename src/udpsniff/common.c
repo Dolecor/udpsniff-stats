@@ -27,8 +27,8 @@ int get_packet_params(const char *raw_packet, size_t size,
     // TODO: check raw_packet, params for NULL
 
     const struct iphdr *iph = (const struct iphdr *)raw_packet;
-    params->dest_ip = iph->daddr;
     params->src_ip = iph->saddr;
+    params->dest_ip = iph->daddr;
 
     const struct udphdr *udph =
         (const struct udphdr *)(raw_packet + sizeof(struct iphdr));
