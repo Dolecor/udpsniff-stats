@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2022 Dmitry Dolenko
+ * Distributed under the MIT software license, see the accompanying
+ * file COPYING or http://www.opensource.org/licenses/mit-license.php.
+ */
+
 #include "priv_exec_option2.h"
 
 static statistics_t glob_stat = {.packets = 0, .bytes = 0};

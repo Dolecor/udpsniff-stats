@@ -1,7 +1,13 @@
-#include <netinet/ip.h>
-#include <netinet/udp.h>
+/*
+ * Copyright (c) 2022 Dmitry Dolenko
+ * Distributed under the MIT software license, see the accompanying 
+ * file COPYING or http://www.opensource.org/licenses/mit-license.php.
+ */
 
 #include "common.h"
+
+#include <netinet/ip.h>
+#include <netinet/udp.h>
 
 int init_raw_socket(int *raw_socket, const char *netif, size_t netif_size)
 {

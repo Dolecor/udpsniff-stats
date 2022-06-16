@@ -1,8 +1,13 @@
+/*
+ * Copyright (c) 2022 Dmitry Dolenko
+ * Distributed under the MIT software license, see the accompanying
+ * file COPYING or http://www.opensource.org/licenses/mit-license.php.
+ */
+
 #ifndef COMMON_H
 #define COMMON_H
 
 #include <sys/types.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -13,13 +18,12 @@
 #include <net/if.h>
 #include <arpa/inet.h>
 
-#include <pthread.h>
-
 #define PORTSTRLEN 6
+#define MAX_PORT 65535
 #define PACKET_MAX_LEN 65536
 
 /* Values that represent any value in packet filtering */
-#define ANY_IP (in_addr_t)0
+#define ANY_IP INADDR_ANY
 #define ANY_PORT (in_port_t)0
 
 typedef struct packet_params {
