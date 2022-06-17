@@ -23,16 +23,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 #include <getopt.h>
 #include <limits.h>
 #include <errno.h>
 
+#include <net/if.h>
 #include <arpa/inet.h>
 
-#include "common.h"
+#include "udpsniff/common.h"
 #include "exec_options/exec_options.h"
 
-#define PROGRAM_NAME "udpsniff"
+#define PROGRAM_NAME "udp-sniff"
 
 typedef struct options {
     packet_params_t params;
@@ -161,6 +163,7 @@ static int port_check_and_set(const char *port_str, in_port_t *port)
 {
     char *endptr;
     uint32_t tmp = (uint32_t)strtoll(port_str, &endptr, 0);
+
     if ((errno != 0) || (endptr == port_str) || (tmp < 1) || (tmp > MAX_PORT)) {
         return 0;
     }

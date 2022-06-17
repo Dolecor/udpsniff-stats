@@ -6,6 +6,10 @@
 
 #include "priv_exec_option2.h"
 
+#include <stdlib.h>
+#include <unistd.h>
+#include <pthread.h>
+
 static statistics_t glob_stat = {.packets = 0, .bytes = 0};
 static statistics_t local_stat;
 static pthread_mutex_t mtx_stat = PTHREAD_MUTEX_INITIALIZER;

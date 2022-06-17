@@ -6,6 +6,10 @@
 
 #include "priv_exec_option1.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
 static int pipe_fds[2];
 static statistics_t sniffer_tmp;
 static statistics_t provider_tmp;

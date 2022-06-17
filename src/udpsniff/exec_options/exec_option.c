@@ -6,6 +6,14 @@
 
 #include "exec_options.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <net/if.h>
+#include <sys/socket.h>
+
+#include "udpsniff/common.h"
 #include "priv_exec_option1.h"
 #include "priv_exec_option2.h"
 

@@ -8,7 +8,6 @@
 #define PRIV_EXEC_OPTION2_H
 
 #include "common.h"
-#include "exec_options.h"
 
 int init_exec_option2();
 void free_exec_option2();

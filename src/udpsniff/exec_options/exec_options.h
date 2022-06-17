@@ -7,8 +7,6 @@
 #ifndef EXEC_OPTIONS_H
 #define EXEC_OPTIONS_H
 
-#include <pthread.h>
-
 #include "common.h"
 
 typedef enum {

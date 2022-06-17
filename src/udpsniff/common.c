@@ -4,8 +4,9 @@
  * file COPYING or http://www.opensource.org/licenses/mit-license.php.
  */
 
-#include "common.h"
+#include "udpsniff/common.h"
 
+#include <stdlib.h>
 #include <netinet/ip.h>
 #include <netinet/udp.h>
 
