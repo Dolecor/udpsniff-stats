@@ -1,12 +1,16 @@
 /*
  * Copyright (c) 2022 Dmitry Dolenko
- * Distributed under the MIT software license, see the accompanying 
- * file COPYING or http://www.opensource.org/licenses/mit-license.php.
+ * Distributed under the MIT software license, see the accompanying
+ * file LICENSE or http://www.opensource.org/licenses/mit-license.php.
  */
 
-#include "udpsniff/common.h"
+#include "netinet_helper.h"
 
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <netinet/ip.h>
 #include <netinet/udp.h>
 
@@ -61,4 +65,40 @@ int check_packet_params(const char *raw_packet, size_t size,
            && ((SRC_PORT == filter->src_port) || (filter->src_port == ANY_PORT))
            && ((DEST_PORT == filter->dest_port)
                || (filter->dest_port == ANY_PORT));
+}
+
+void inaddr_to_str(in_addr_t ip, char *buf)
+{
+    if (ip == ANY_IP) {
+        strcpy(buf, ANY_STR);
+    } else {
+        inet_ntop(AF_INET, &ip, buf, INET_ADDRSTRLEN);
+    }
+}
+
+void port_to_str(in_port_t port, char *buf)
+{
+    if (port == ANY_PORT) {
+        strcpy(buf, ANY_STR);
+    } else {
+        sprintf(buf, "%d", port);
+    }
+}
+
+void str_to_inaddr(in_addr_t *ip, const char *buf)
+{
+    if (buf[0] == ANY_STR[0]) {
+        *ip = ANY_IP;
+    } else {
+        *ip = inet_addr(buf);
+    }
+}
+
+void str_to_port(in_port_t *port, const char *buf)
+{
+    if (buf[0] == ANY_STR[0]) {
+        *port = ANY_PORT;
+    } else {
+        *port = (uint16_t)strtol(buf, NULL, 0);
+    }
 }

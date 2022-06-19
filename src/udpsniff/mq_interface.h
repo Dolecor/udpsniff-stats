@@ -4,13 +4,14 @@
  * file LICENSE or http://www.opensource.org/licenses/mit-license.php.
  */
 
-#ifndef PRINTSTATS_H
-#define PRINTSTATS_H
+#ifndef MQ_INTERFACE_H
+#define MQ_INTERFACE_H
 
 #include "common.h"
 
-void printparams(packet_params_t params);
-void printstats(statistics_t stats);
-void printstats_cr(statistics_t stats);
+int init_mq(packet_params_t params);
+int free_mq();
+int check_request();
+int send_reply(statistics_t reply);
 
-#endif /* PRINTSTATS_H */
+#endif /* MQ_INTERFACE_H */

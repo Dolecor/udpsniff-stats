@@ -31,7 +31,7 @@
 #include <net/if.h>
 #include <arpa/inet.h>
 
-#include "udpsniff/common.h"
+#include "netinet_helper.h"
 #include "exec_options/exec_options.h"
 
 #define PROGRAM_NAME "udp-sniff"

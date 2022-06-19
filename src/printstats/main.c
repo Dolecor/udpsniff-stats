@@ -22,8 +22,19 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+
+#include <string.h>
+
+#include <mqueue.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "common.h"
+#include "netinet_helper.h"
+#include "printstats.h"
+#include "mq_common.h"
+#include "printstats/mq_interface.h"
 
 #define PROGRAM_NAME "print-stats"
 
@@ -38,8 +49,26 @@ static void parse_options(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
     int ret = EXIT_SUCCESS;
+    statistics_t reply;
+    packet_params_t params;
 
-    printf("test\n");
+    if (init_mq(argv[1])) {
+        ret = EXIT_FAILURE;
+        printf("%s\n", argv[1]);
+        goto exit;
+    }
 
+    if (get_stats(&reply)) {
+        ret = EXIT_FAILURE;
+        goto err_free;
+    }
+
+    decode_params(&params, argv[1]);
+    printparams(params);
+    printstats(reply);
+
+err_free:
+    free_mq();
+exit:
     exit(ret);
 }
