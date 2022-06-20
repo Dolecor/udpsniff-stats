@@ -11,8 +11,9 @@
 #include "common.h"
 #include "netinet_helper.h"
 
-void printparams(packet_params_t params)
+void printparams(packet_params_t params, const char *ifname)
 {
+#define DELIM_STR "-------------------------------------------"
     char src_ip[INET_ADDRSTRLEN];
     char dest_ip[INET_ADDRSTRLEN];
     char src_port[PORTSTRLEN];
@@ -23,10 +24,12 @@ void printparams(packet_params_t params)
     port_to_str(params.src_port, src_port);
     port_to_str(params.dest_port, dest_port);
 
-    printf("%-15s %-5s %-15s %-5s\n",
-           "source ip", "sport", "dest ip", "dport");
-    printf("%-15s %-5s %-15s %-5s\n",
-           src_ip, src_port, dest_ip, dest_port);
+    printf(DELIM_STR "\n");
+    printf("Device name: %s\n", ifname);
+    printf(DELIM_STR "\n");
+    printf("%-15s %-5s %-15s %-5s\n", "source ip", "sport", "dest ip", "dport");
+    printf("%-15s %-5s %-15s %-5s\n", src_ip, src_port, dest_ip, dest_port);
+    printf(DELIM_STR "\n");
 }
 
 void printstats(statistics_t stats)

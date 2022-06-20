@@ -15,21 +15,10 @@
 #include <errno.h>
 
 #include "netinet_helper.h"
-#include "priv_exec_option1.h"
-#include "priv_exec_option2.h"
+#include "udpsniff/exec_options/priv_exec_option1.h"
+#include "udpsniff/exec_options/priv_exec_option2.h"
+#include "udpsniff/control.h"
 #include "udpsniff/mq_interface.h"
-
-typedef int (*sniffer_update_stat_cb)(size_t bytes);
-typedef int (*provider_retrieve_stat_cb)(statistics_t *stat);
-typedef int (*provider_send_stat_cb)();
-
-typedef struct exec_option_config {
-    int (*init_exec)();
-    void (*free_exec)();
-    sniffer_update_stat_cb update_cb;
-    provider_retrieve_stat_cb retrieve_cb;
-    provider_send_stat_cb send_cb;
-} exec_option_config_t;
 
 static struct thread_ret {
     int exit_status;
@@ -55,22 +44,25 @@ static void *sniff_packets(void *arg)
 
     sniff_ret.exit_status = EXIT_SUCCESS;
 
-    if (init_raw_socket(&sock, args.if_name, IF_NAMESIZE) == EXIT_FAILURE) {
+    if (!init_raw_socket(&sock, args.if_name, IF_NAMESIZE)) {
         perror("init_raw_socket");
         sniff_ret.exit_status = EXIT_FAILURE;
         goto sniffer_exit;
     }
 
-    while (1) {
+    while (!stop_flag) {
+        errno = 0;
         num_bytes = recvfrom(sock, raw_packet, PACKET_MAX_LEN, 0, NULL, NULL);
-        if (num_bytes == -1) {
+        if ((num_bytes == -1) && (errno != EAGAIN)) {
             perror("recvfrom");
             sniff_ret.exit_status = EXIT_FAILURE;
             goto sniffer_exit;
+        } else if (errno == EAGAIN) {
+            continue;
         }
 
         if (check_packet_params(raw_packet, num_bytes, &args.packet_filter)) {
-            if (args.update_stat_cb(num_bytes) == EXIT_FAILURE) {
+            if (args.update_stat_cb(num_bytes) == RCEXEC_BROKEN_IPC) {
                 sniff_ret.exit_status = EXIT_FAILURE;
                 goto sniffer_exit;
             }
@@ -79,6 +71,9 @@ static void *sniff_packets(void *arg)
 
 sniffer_exit:
     close(sock);
+    if (sniff_ret.exit_status == EXIT_FAILURE) {
+        raise(SIGTERM);
+    }
     pthread_exit((void *)&sniff_ret);
 }
 
@@ -90,21 +85,24 @@ static void *provide_stats(void *arg)
 
     prov_ret.exit_status = EXIT_SUCCESS;
 
-    while (1) {
-        if (args.retrieve_stat_cb(&stat) == EXIT_FAILURE) {
+    while (!stop_flag) {
+        if (args.retrieve_stat_cb(&stat) == RCEXEC_BROKEN_IPC) {
             prov_ret.exit_status = EXIT_FAILURE;
             goto provider_exit;
         }
 
         int loop_cnt = 0;
         while (check_request() && (loop_cnt < MAX_LOOP_CNT)) {
-            printf("bytes : %ld    packets : %ld\n", stat.bytes, stat.packets);
+            printf("REQ\n");
             send_reply(stat);
             ++loop_cnt;
         }
     }
 
 provider_exit:
+    if (prov_ret.exit_status == EXIT_FAILURE) {
+        raise(SIGTERM);
+    }
     pthread_exit((void *)&prov_ret);
 }
 
@@ -121,12 +119,21 @@ static int execute(const exec_option_config_t *config, const char *if_name,
     struct provider_arg prov_arg = {.packet_info = packet_params,
                                     .retrieve_stat_cb = config->retrieve_cb};
 
-    if (init_mq(packet_params) == EXIT_FAILURE) {
+    sniff_arg.packet_filter.src_port = htons(sniff_arg.packet_filter.src_port);
+    sniff_arg.packet_filter.dest_port =
+        htons(sniff_arg.packet_filter.dest_port);
+
+    if (!set_signals()) {
         ret = EXIT_FAILURE;
         goto exit;
     }
 
-    if (config->init_exec() == EXIT_FAILURE) {
+    if (!init_mq(packet_params, if_name)) {
+        ret = EXIT_FAILURE;
+        goto exit;
+    }
+
+    if (config->init_exec() != RCEXEC_OK) {
         ret = EXIT_FAILURE;
         goto err_free;
     }
@@ -159,8 +166,10 @@ static int execute(const exec_option_config_t *config, const char *if_name,
         goto err_free;
     }
 
-    printf("Sniffer exit status  : %d\n", thr_rets[0]->exit_status);
-    printf("Provider exit status : %d\n", thr_rets[1]->exit_status);
+    printf("Sniffer exit status  : %s\n",
+           thr_rets[0]->exit_status == EXIT_SUCCESS ? "OK" : "ERR");
+    printf("Provider exit status : %s\n",
+           thr_rets[1]->exit_status == EXIT_SUCCESS ? "OK" : "ERR");
 
 err_free:
     config->free_exec();
@@ -173,7 +182,6 @@ int exec_option(exec_option_t option, const char *if_name,
                 packet_params_t packet_info)
 {
     exec_option_config_t config;
-    int ret;
 
     switch (option) {
     case OPT1:
@@ -193,7 +201,5 @@ int exec_option(exec_option_t option, const char *if_name,
         return EXIT_FAILURE;
     }
 
-    ret = execute(&config, if_name, packet_info);
-
-    return ret;
+    return execute(&config, if_name, packet_info);
 }

@@ -12,7 +12,8 @@
 
 #include "netinet_helper.h"
 
-void generate_mq_prov_name(packet_params_t params, char *buf)
+void generate_mq_prov_name(packet_params_t params, const char *ifname,
+                           char *buf)
 {
     char src_ip[INET_ADDRSTRLEN];
     char src_port[PORTSTRLEN];
@@ -24,11 +25,11 @@ void generate_mq_prov_name(packet_params_t params, char *buf)
     inaddr_to_str(params.dest_ip, dest_ip);
     port_to_str(params.dest_port, dest_port);
 
-    sprintf(buf, MQ_PROV_NAME_FMTSTR,
-            MQ_NAME_PREFIX, src_ip, src_port, dest_ip, dest_port);
+    sprintf(buf, MQ_PROV_NAME_FMTSTR, MQ_NAME_PREFIX,
+            ifname, src_ip, src_port, dest_ip, dest_port);
 }
 
-void decode_params(packet_params_t *params, const char *buf)
+void decode_params(packet_params_t *params, char *ifname, const char *buf)
 {
     const char delim[] = sep;
     char *token;
@@ -41,6 +42,8 @@ void decode_params(packet_params_t *params, const char *buf)
     strcpy(str, buf);
 
     token = strtok(str, delim);  /* mq name prefix, skip */
+    token = strtok(NULL, delim); /* interface name */
+    strcpy(ifname, token);
     token = strtok(NULL, delim); /* source ip */
     strcpy(src_ip, token);
     token = strtok(NULL, delim); /* source port */

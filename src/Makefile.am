@@ -3,6 +3,7 @@ bin_PROGRAMS = udp-sniff print-stats
 udp_sniff_SOURCES = \
     udpsniff/main.c \
     netinet_helper.c \
+    udpsniff/control.c \
     udpsniff/exec_options/exec_option.c \
     udpsniff/exec_options/exec_option1.c \
     udpsniff/exec_options/exec_option2.c \

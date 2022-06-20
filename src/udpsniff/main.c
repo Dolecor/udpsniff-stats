@@ -164,11 +164,12 @@ static int port_check_and_set(const char *port_str, in_port_t *port)
     char *endptr;
     uint32_t tmp = (uint32_t)strtoll(port_str, &endptr, 0);
 
-    if ((errno != 0) || (endptr == port_str) || (tmp < 1) || (tmp > MAX_PORT)) {
+    if ((errno != 0) || (endptr == port_str)
+        || (tmp < 1) || (tmp > MAX_PORT)) {
         return 0;
     }
 
-    *port = htons(tmp);
+    *port = tmp;
 
     return 1;
 }

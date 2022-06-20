@@ -10,7 +10,7 @@
 #include "common.h"
 
 int init_mq(const char *mq_provider_name);
-int free_mq();
+void free_mq();
 int get_stats(statistics_t *reply);
 
 #endif /* MQ_INTERFACE_H */

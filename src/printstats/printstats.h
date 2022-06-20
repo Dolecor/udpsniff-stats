@@ -9,7 +9,7 @@
 
 #include "common.h"
 
-void printparams(packet_params_t params);
+void printparams(packet_params_t params, const char *ifname);
 void printstats(statistics_t stats);
 void printstats_cr(statistics_t stats);
 

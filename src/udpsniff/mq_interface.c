@@ -10,8 +10,6 @@
 #include <stdio.h>
 #include <errno.h>
 
-#include <unistd.h>
-
 #include <mqueue.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -19,33 +17,42 @@
 #include "common.h"
 #include "mq_common.h"
 
-#define MAX_PENDING_REQ 1
+#define MAX_PENDING_REQ 10
 
+static uint8_t inited = 0;
 static char mq_provider_name[MQ_PROV_NAME_SIZE];
 static mqd_t mqd_provider; /* MQ to read requests for stats */
 static msg_request_t last_req;
 
-int init_mq(packet_params_t params)
+int init_mq(packet_params_t params, const char *ifname)
 {
+    if (inited) {
+        return 0;
+    }
+
     const int flags = (O_CREAT | O_EXCL | O_RDONLY | O_NONBLOCK);
     const mode_t perms = (S_IRUSR | S_IWUSR);
     struct mq_attr attr = {.mq_maxmsg = MAX_PENDING_REQ,
-                                 .mq_msgsize = sizeof(msg_request_t)};
+                           .mq_msgsize = sizeof(msg_request_t)};
 
-    generate_mq_prov_name(params, mq_provider_name);
+    generate_mq_prov_name(params, ifname, mq_provider_name);
     mqd_provider = mq_open(mq_provider_name, flags, perms, &attr);
     if (mqd_provider == (mqd_t)-1) {
-        perror("mq_open(mq_reply_name)");
-        return EXIT_FAILURE;
+        perror("mq_open(mq_provider_name)");
+        return 0;
     }
 
-    return EXIT_SUCCESS;
+    inited = 1;
+    return 1;
 }
 
-int free_mq()
+void free_mq()
 {
-    mq_close(mqd_provider);
-    mq_unlink(mq_provider_name);
+    if (inited) {
+        mq_close(mqd_provider);
+        mq_unlink(mq_provider_name);
+        inited = 0;
+    }
 }
 
 int check_request()
@@ -64,9 +71,6 @@ int check_request()
         exit(EXIT_FAILURE);
     }
 
-    printf("msgsize : %ld\n", tmp_attr.mq_msgsize);
-    printf("structsize : %ld\n", sizeof(last_req));
-
     return 1;
 }
 
@@ -80,7 +84,8 @@ int send_reply(statistics_t reply)
         return 0;
     }
 
-    if (mq_send(mqd_tmp, (const char *)&msg_reply, sizeof(msg_reply), 0)) {
+    if (mq_send(mqd_tmp, (const char *)&msg_reply, sizeof(msg_reply), 0)
+        == -1) {
         mq_close(mqd_tmp);
         return 0;
     }

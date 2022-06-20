@@ -9,8 +9,8 @@
 
 #include "common.h"
 
-int init_mq(packet_params_t params);
-int free_mq();
+int init_mq(packet_params_t params, const char *ifname);
+void free_mq();
 int check_request();
 int send_reply(statistics_t reply);
 

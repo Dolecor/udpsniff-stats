@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
@@ -16,27 +17,27 @@
 
 int init_raw_socket(int *raw_socket, const char *netif, size_t netif_size)
 {
-    int ret;
-
     *raw_socket = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
     if (*raw_socket < 0) {
-        return EXIT_FAILURE;
+        return 0;
     }
 
-    ret =
-        setsockopt(*raw_socket, SOL_SOCKET, SO_BINDTODEVICE, netif, netif_size);
-    if (ret < 0) {
-        return EXIT_FAILURE;
+    if (setsockopt(*raw_socket, SOL_SOCKET, SO_BINDTODEVICE, netif, netif_size)
+        == -1) {
+        return 0;
     }
 
-    return EXIT_SUCCESS;
+    if (fcntl(*raw_socket, F_SETFL, O_NONBLOCK) == -1) {
+        perror("fcntl");
+        return 0;
+    }
+
+    return 1;
 }
 
 int get_packet_params(const char *raw_packet, size_t size,
                       packet_params_t *params)
 {
-    // TODO: check raw_packet, params for NULL
-
     const struct iphdr *iph = (const struct iphdr *)raw_packet;
     params->src_ip = iph->saddr;
     params->dest_ip = iph->daddr;
@@ -46,19 +47,19 @@ int get_packet_params(const char *raw_packet, size_t size,
     params->src_port = udph->uh_sport;
     params->dest_port = udph->uh_dport;
 
-    return EXIT_SUCCESS;
+    return 1;
 }
 
 int check_packet_params(const char *raw_packet, size_t size,
                         const packet_params_t *filter)
 {
-    packet_params_t params;
-    get_packet_params(raw_packet, size, &params);
-
 #define SRC_IP params.src_ip
 #define DEST_IP params.dest_ip
 #define SRC_PORT params.src_port
 #define DEST_PORT params.dest_port
+
+    packet_params_t params;
+    get_packet_params(raw_packet, size, &params);
 
     return ((SRC_IP == filter->src_ip) || (filter->src_ip == ANY_IP))
            && ((DEST_IP == filter->dest_ip) || (filter->dest_ip == ANY_IP))
