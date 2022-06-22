@@ -24,7 +24,6 @@ void printparams(packet_params_t params, const char *ifname)
     port_to_str(params.src_port, src_port);
     port_to_str(params.dest_port, dest_port);
 
-    printf(DELIM_STR "\n");
     printf("Device name: %s\n", ifname);
     printf(DELIM_STR "\n");
     printf("%-15s %-5s %-15s %-5s\n", "source ip", "sport", "dest ip", "dport");

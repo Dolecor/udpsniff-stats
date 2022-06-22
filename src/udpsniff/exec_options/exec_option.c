@@ -93,7 +93,6 @@ static void *provide_stats(void *arg)
 
         int loop_cnt = 0;
         while (check_request() && (loop_cnt < MAX_LOOP_CNT)) {
-            printf("REQ\n");
             send_reply(stat);
             ++loop_cnt;
         }
