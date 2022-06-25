@@ -39,7 +39,7 @@ static void *sniff_packets(void *arg)
 {
     struct sniffer_arg args = *((struct sniffer_arg *)arg);
     int sock;
-    unsigned char raw_packet[PACKET_MAX_LEN];
+    char raw_packet[PACKET_MAX_LEN];
     ssize_t num_bytes;
 
     sniff_ret.exit_status = EXIT_SUCCESS;

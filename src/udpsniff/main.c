@@ -102,9 +102,9 @@ static void parse_options(int argc, char *argv[], options_t *options)
         case 'h':
             print_help_and_exit(NULL);
         case 'e':
-            if (!strncmp(optarg, "opt1", sizeof(optarg))) {
+            if (!strncmp(optarg, "opt1", strlen(optarg))) {
                 options->exec_opt = OPT1;
-            } else if (!strncmp(optarg, "opt2", sizeof(optarg))) {
+            } else if (!strncmp(optarg, "opt2", strlen(optarg))) {
                 options->exec_opt = OPT2;
             } else {
                 print_help_and_exit("Wrong execution option (-e).");
