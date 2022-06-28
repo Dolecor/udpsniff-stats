@@ -6,29 +6,46 @@
 
 #include "netinet_helper.h"
 
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
+#include <sys/ioctl.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <netinet/udp.h>
+#include <net/if.h>
+#include <net/ethernet.h>
+#include <netinet/if_ether.h>
+#include <linux/if_packet.h>
 
 int init_raw_socket(int *raw_socket, const char *netif, size_t netif_size)
 {
-    *raw_socket = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
+    struct sockaddr_ll addr;
+    struct ifreq ifr;
+
+    *raw_socket = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_IP));
     if (*raw_socket < 0) {
         return 0;
     }
 
-    if (setsockopt(*raw_socket, SOL_SOCKET, SO_BINDTODEVICE, netif, netif_size)
-        == -1) {
+    strncpy(ifr.ifr_name, netif, netif_size);
+    if (ioctl(*raw_socket, SIOCGIFINDEX, &ifr) == -1) {
+        return 0;
+    }
+
+    addr.sll_family = AF_PACKET;
+    addr.sll_ifindex = ifr.ifr_ifindex;
+    addr.sll_protocol = htons(ETH_P_IP);
+    if (bind(*raw_socket, (struct sockaddr *)&addr, sizeof(addr))) {
+        close(*raw_socket);
         return 0;
     }
 
     if (fcntl(*raw_socket, F_SETFL, O_NONBLOCK) == -1) {
-        perror("fcntl");
+        close(*raw_socket);
         return 0;
     }
 
@@ -38,12 +55,13 @@ int init_raw_socket(int *raw_socket, const char *netif, size_t netif_size)
 int get_packet_params(const char *raw_packet, size_t size,
                       packet_params_t *params)
 {
-    const struct iphdr *iph = (const struct iphdr *)raw_packet;
+    const struct iphdr *iph =
+        (const struct iphdr *)(raw_packet + sizeof(struct ethhdr));
     params->src_ip = iph->saddr;
     params->dest_ip = iph->daddr;
 
     const struct udphdr *udph =
-        (const struct udphdr *)(raw_packet + sizeof(struct iphdr));
+        (const struct udphdr *)((const char *)iph + sizeof(struct iphdr));
     params->src_port = udph->uh_sport;
     params->dest_port = udph->uh_dport;
 
