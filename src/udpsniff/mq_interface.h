@@ -12,6 +12,6 @@
 int init_mq(packet_params_t params, const char *ifname);
 void free_mq();
 int check_request();
-int send_reply(statistics_t reply);
+int send_reply(packet_params_t params, statistics_t stats, const char *ifname);
 
 #endif /* MQ_INTERFACE_H */

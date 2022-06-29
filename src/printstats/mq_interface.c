@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <mqueue.h>
 #include <sys/stat.h>
@@ -61,7 +62,7 @@ void free_mq()
     }
 }
 
-int get_stats(statistics_t *reply)
+int get_stats(packet_params_t *params, statistics_t *stats, char *ifname)
 {
     msg_request_t req;
     msg_reply_t rep;
@@ -77,7 +78,11 @@ int get_stats(statistics_t *reply)
         return 0;
     }
 
-    *reply = rep.stats;
+    *params = rep.params;
+    *stats = rep.stats;
+    strncpy(ifname, rep.ifname, IF_NAMESIZE);
 
+    printf("%s\n", rep.ifname);
+    
     return 1;
 }

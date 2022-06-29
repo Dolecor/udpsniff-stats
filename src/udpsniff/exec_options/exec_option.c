@@ -31,6 +31,7 @@ struct sniffer_arg {
 };
 
 struct provider_arg {
+    const char *if_name;
     packet_params_t packet_info;
     provider_retrieve_stat_cb retrieve_stat_cb;
 };
@@ -93,7 +94,7 @@ static void *provide_stats(void *arg)
 
         int loop_cnt = 0;
         while (check_request() && (loop_cnt < MAX_LOOP_CNT)) {
-            send_reply(stat);
+            send_reply(args.packet_info, stat, args.if_name);
             ++loop_cnt;
         }
     }
@@ -115,7 +116,8 @@ static int execute(const exec_option_config_t *config, const char *if_name,
     struct sniffer_arg sniff_arg = {.if_name = if_name,
                                     .packet_filter = packet_params,
                                     .update_stat_cb = config->update_cb};
-    struct provider_arg prov_arg = {.packet_info = packet_params,
+    struct provider_arg prov_arg = {.if_name = if_name,
+                                    .packet_info = packet_params,
                                     .retrieve_stat_cb = config->retrieve_cb};
 
     sniff_arg.packet_filter.src_port = htons(sniff_arg.packet_filter.src_port);

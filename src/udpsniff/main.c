@@ -177,7 +177,8 @@ static int port_check_and_set(const char *port_str, in_port_t *port)
 int main(int argc, char *argv[])
 {
     int ret;
-    options_t options = {.exec_opt = OPT2, .params = DEFAULT_PACKET_PARAMS};
+    options_t options = {.exec_opt = OPT2,
+                         .params = DEFAULT_PACKET_PARAMS};
 
     parse_options(argc, argv, &options);
     ret = exec_option(options.exec_opt, options.if_name, options.params);

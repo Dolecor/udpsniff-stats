@@ -12,6 +12,7 @@
 
 #include "netinet_helper.h"
 
+
 void generate_mq_prov_name(packet_params_t params, const char *ifname,
                            char *buf)
 {

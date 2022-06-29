@@ -7,6 +7,8 @@
 #ifndef MQ_COMMON_H
 #define MQ_COMMON_H
 
+#include <net/if.h>
+
 #include "common.h"
 
 #define sep "_"
@@ -21,6 +23,10 @@
 #define MQ_PROV_NAME_SIZE sizeof(MQ_PROV_NAME_MASK)
 #define MQ_PROV_NAME_FMTSTR ("/%s" sep "%s" sep "%s" sep "%s" sep "%s" sep "%s")
 
+/* MQ name of provider when the only one instance of udp-sniff is required  */
+#define MQ_SINGLE_PROV_NAME "/mq-udpsniff"
+#define MQ_SINGLE_PROV_NAME_SIZE sizeof(MQ_SINGLE_PROV_NAME)
+
 #define MQ_REPLY_PREFIX "mq-udpsniff-reply"
 #define MQ_REPLY_POSTFIX "xxxxxxx" /* print-stats' PID */
 #define MQ_REPLY_NAME_MASK ("/" MQ_REPLY_PREFIX sep MQ_REPLY_POSTFIX)
@@ -33,6 +39,8 @@ typedef struct msg_request {
 
 typedef struct msg_reply {
     statistics_t stats;
+    packet_params_t params;
+    char ifname[IF_NAMESIZE];
 } msg_reply_t;
 
 void generate_mq_prov_name(packet_params_t params, const char *ifname,

@@ -25,7 +25,6 @@
 #include <unistd.h>
 #include <net/if.h>
 #include <string.h>
-#include <getopt.h>
 
 #include "common.h"
 #include "printstats.h"
@@ -34,78 +33,36 @@
 
 #define PROGRAM_NAME "print-stats"
 
-static void print_help_and_exit(char *msg)
-{
-    if (msg != NULL) {
-        fprintf(stderr, "%s\n\n", msg);
-    }
-    fprintf(stderr, "Usage: %s [-h|--help] <mq name>\n", PROGRAM_NAME);
-    fprintf(stderr, "\n");
-    fprintf(stderr, "  <mq name>     Message queue name (see 'ls /dev/mqueue'\n"
-                    "                for available options).\n");
-    fprintf(stderr, "  -h, --help    Print this help and exit.\n");
-
-    exit(EXIT_FAILURE);
-}
-
-static void parse_options(int argc, char *argv[], char *mq_name)
-{
-    int opt;
-
-    static const struct option long_opts[] = {
-        {"help", no_argument, NULL, 'h'},
-        {NULL, 0, NULL, 0}};
-
-    while ((opt = getopt_long(argc, argv, "h", long_opts, NULL)) != -1) {
-        switch (opt) {
-        case 'h':
-            print_help_and_exit(NULL);
-        default:
-            print_help_and_exit(NULL);
-        }
-    }
-
-    if (optind < argc) {
-        strncpy(mq_name, argv[optind], MQ_PROV_NAME_SIZE);
-    } else {
-        print_help_and_exit("Message queue name must be specified.");
-    }
-}
-
-static int execute(const char *mq_prov_name)
+static int execute()
 {
     int ret = EXIT_SUCCESS;
-    statistics_t reply;
+    statistics_t stats;
     packet_params_t params;
     char ifname[IF_NAMESIZE];
 
-    if (!init_mq(mq_prov_name)) {
-        ret = EXIT_FAILURE;
-        goto exit;
+    if (!init_mq(MQ_SINGLE_PROV_NAME)) {
+        return EXIT_FAILURE;
     }
 
-    if (!get_stats(&reply)) {
-        ret = EXIT_FAILURE;
-        goto err_free;
+    if (!get_stats(&params, &stats, ifname)) {
+        free_mq();
+        return EXIT_FAILURE;
     }
 
-    decode_params(&params, ifname, mq_prov_name);
     printparams(params, ifname);
-    printstats(reply);
+    printstats(stats);
 
-err_free:
     free_mq();
-exit:
-    return ret;
+    return EXIT_SUCCESS;
 }
 
 int main(int argc, char *argv[])
 {
-    int ret = EXIT_SUCCESS;
-    char mq_provider_name[MQ_PROV_NAME_SIZE];
+    if (argc > 1) {
+        fprintf(stderr, "Usage: %s\n", PROGRAM_NAME);
+        exit(EXIT_FAILURE);
+    }
 
-    parse_options(argc, argv, mq_provider_name);
-
-    ret = execute(mq_provider_name);
+    int ret = execute();
     exit(ret);
 }

@@ -11,6 +11,6 @@
 
 int init_mq(const char *mq_provider_name);
 void free_mq();
-int get_stats(statistics_t *reply);
+int get_stats(packet_params_t *params, statistics_t *stats, char *ifname);
 
 #endif /* MQ_INTERFACE_H */
