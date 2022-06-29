@@ -9,7 +9,7 @@
   - [Коммуникация между утилитами](#коммуникация-между-утилитами)
 - [Сборка](#сборка)
   - [Сборка из исходных файлов](#сборка-из-исходных-файлов)
-  - [Сборка из архива](#сборка-из-архива)
+  - [Сборка из архива в Releases (udpsniff-stats-{version}.tar.gz)](#сборка-из-архива-в-releases-udpsniff-stats-versiontargz)
 - [Запуск утилит](#запуск-утилит)
   - [Привилегии udp-sniff](#привилегии-udp-sniff)
   - [Запуск udp-sniff](#запуск-udp-sniff)
@@ -66,21 +66,23 @@ apt-get install autoconf
 ```bash
 $ autoreconf --install
 $ mkdir build && cd build
-$ ../configure --prefix /path/to/install
-$ make install
+$ ../configure
+$ make
 ```
 
-После выполнения этих команд в каталоге /path/to/install/bin (или если команда `configure` была выполнена без опции prefix - в стандартных директориях /usr/bin или /usr/local/bin) будет создано два исполняемых файла: `udp-sniff` и `print-stats`.
+После выполнения этих команд исполняемые файлы - `udp-sniff` и `print-stats` - будут созданы в /udpsniff-stats/build/src.
 
-## Сборка из архива
+## Сборка из архива в Releases (udpsniff-stats-{version}.tar.gz)
 Для сборки необходимо из каталога с распакованным исходным кодом запустить следующие команды:
 
 ```bash
-$ ./configure --prefix /path/to/install
-$ make install
+$ mkdir build && cd build
+$ ../configure
+$ make
 ```
 
-Будут созданы те же файлы, что и при сборке с помощью первого варианта.
+Исполняемые файлы будут созданы там же, что и при сборке первым вариантом.
+
 
 <div class="page"/>
 
@@ -101,14 +103,14 @@ $ sudo setcap cap_net_raw+ep ./udp-sniff
 - 4 опциональных (отвечающих за фильтрацию пакетов): IP-адрес источника, IP-адрес назначения, порт источника, порт назначения. Если опция не указана, то для соответствующего параметра устанавливается значение по умолчанию `0`. Это значение указывает, что любой ip адрес (или порт) соответсвующего параметра пакета будет учитываться в статистике.
 
   ```bash
-  $ udp-sniff lo --dest-ip 127.0.0.1 --dest-port 1234
+  $ ./udp-sniff lo --dest-ip 127.0.0.1 --dest-port 1234
   ```
 
 ## Запуск print-stats
 Утилита `print-stats` не принимает аргументов:
 
   ```bash
-  $ print-stats
+  $ ./print-stats
   Device name: lo
   -------------------------------------------
   source ip       sport dest ip         dport
