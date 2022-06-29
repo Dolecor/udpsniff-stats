@@ -131,7 +131,7 @@ $ cat /dev/urandom | base64 | head -c 100000 | nc -u 127.0.0.1 1234
 Вызов `print-stats` показывает следующее:
 
 ```bash
-$ ./print-stats /mq-udpsniff_lo_0_0_127.0.0.1_1234
+$ ./print-stats
 Device name: lo
 -------------------------------------------
 source ip       sport dest ip         dport
