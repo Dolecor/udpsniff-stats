@@ -18,7 +18,18 @@
 #include "udpsniff/exec_options/priv_exec_option1.h"
 #include "udpsniff/exec_options/priv_exec_option2.h"
 #include "udpsniff/control.h"
-#include "udpsniff/mq_interface.h"
+
+#define USE_UBUS 1
+
+#if USE_UBUS
+#    include <libubus.h>
+#    include <libubox/uloop.h>
+#    include <libubox/blobmsg_json.h>
+#    include "ipc/ubus/ubus_binary_helper.h"
+#    include "ipc/ubus/ubus_common.h"
+#else
+#    include "ipc/mq/mq_interface_provider.h"
+#endif
 
 static struct thread_ret {
     int exit_status;
@@ -78,13 +89,127 @@ sniffer_exit:
     pthread_exit((void *)&sniff_ret);
 }
 
+#if USE_UBUS
+static struct provider_arg prov_args;
+static statistics_t loc_stats = {.packets = 0, .bytes = 0};
+static msg_reply_t reply;
+
+static struct ubus_context *ctx;
+static struct ubus_subscriber test_event;
+static struct blob_buf b;
+
+enum {
+    STATS_GET,
+    __STATS_MAX
+};
+
+static const struct blobmsg_policy stats_policy[__STATS_MAX] = {
+    [STATS_GET] = {.name = "get", .type = BLOBMSG_TYPE_UNSPEC}};
+
+static int stats_get(struct ubus_context *ctx, struct ubus_object *obj,
+                     struct ubus_request_data *req, const char *method,
+                     struct blob_attr *msg)
+{
+    struct blob_attr *tb[__STATS_MAX];
+
+    blobmsg_parse(stats_policy, __STATS_MAX, tb, blob_data(msg), blob_len(msg));
+    if (!tb[STATS_GET])
+        return UBUS_STATUS_INVALID_ARGUMENT;
+
+    reply.stats = loc_stats;
+
+    blob_buf_init(&b, 0);
+    blobmsg_add_binary(&b, "stats", (char *)&reply, sizeof(msg_reply_t));
+    ubus_send_reply(ctx, req, b.head);
+
+    return 0;
+}
+
+static const struct ubus_method stats_methods[] = {
+    UBUS_METHOD("get", stats_get, stats_policy)};
+
+static struct ubus_object_type stats_object_type =
+    UBUS_OBJECT_TYPE("stats", stats_methods);
+
+static struct ubus_object stats_object = {
+    .name = "stats",
+    .type = &stats_object_type,
+    .methods = stats_methods,
+    .n_methods = ARRAY_SIZE(stats_methods),
+};
+
+#    define TIMEOUT_MSEC 100
+
+static void retrieve_stat_cb(struct uloop_timeout *timeout)
+{
+    if (prov_args.retrieve_stat_cb(&loc_stats) == RCEXEC_BROKEN_IPC) {
+        prov_ret.exit_status = EXIT_FAILURE;
+        return;
+    }
+
+    //printf("%ld %ld\n", loc_stats.packets, loc_stats.bytes);
+
+    uloop_timeout_set(timeout, TIMEOUT_MSEC);
+}
+
+static struct uloop_timeout retrieve = {.cb = retrieve_stat_cb};
+
 static void *provide_stats(void *arg)
 {
-#define MAX_LOOP_CNT 10
+    prov_args = *((struct provider_arg *)arg);
+    const char *ubus_socket = NULL;
+    int ret;
+
+    prov_ret.exit_status = EXIT_SUCCESS;
+
+    strncpy(reply.ifname, prov_args.if_name, IF_NAMESIZE);
+    reply.params = prov_args.packet_info;
+
+    uloop_init();
+
+    ctx = ubus_connect(ubus_socket);
+    if (!ctx) {
+        fprintf(stderr, "Failed to connect to ubus\n");
+        prov_ret.exit_status = EXIT_FAILURE;
+        goto provider_exit;
+    }
+
+    ubus_add_uloop(ctx);
+
+    ret = ubus_add_object(ctx, &stats_object);
+    if (ret) {
+        fprintf(stderr,
+                "Failed to add object: %s. Maybe udp-sniff is already running.\n",
+                ubus_strerror(ret));
+        prov_ret.exit_status = EXIT_FAILURE;
+        goto provider_exit;
+    }
+
+    uloop_timeout_set(&retrieve, TIMEOUT_MSEC);
+
+    uloop_run();
+
+provider_exit:
+    ubus_free(ctx);
+    uloop_done();
+    if (prov_ret.exit_status == EXIT_FAILURE) {
+        raise(SIGTERM);
+    }
+    pthread_exit((void *)&prov_ret);
+}
+#else
+static void *provide_stats(void *arg)
+{
+#    define MAX_LOOP_CNT 10
     struct provider_arg args = *((struct provider_arg *)arg);
     statistics_t stat;
 
     prov_ret.exit_status = EXIT_SUCCESS;
+
+    if (!init_mq_prov(args.packet_info, args.if_name)) {
+        prov_ret.exit_status = EXIT_FAILURE;
+        goto provider_exit;
+    }
 
     while (!stop_flag) {
         if (args.retrieve_stat_cb(&stat) == RCEXEC_BROKEN_IPC) {
@@ -100,11 +225,13 @@ static void *provide_stats(void *arg)
     }
 
 provider_exit:
+    free_mq_prov();
     if (prov_ret.exit_status == EXIT_FAILURE) {
         raise(SIGTERM);
     }
     pthread_exit((void *)&prov_ret);
 }
+#endif
 
 static int execute(const exec_option_config_t *config, const char *if_name,
                    packet_params_t packet_params)
@@ -125,11 +252,6 @@ static int execute(const exec_option_config_t *config, const char *if_name,
         htons(sniff_arg.packet_filter.dest_port);
 
     if (!set_signals()) {
-        ret = EXIT_FAILURE;
-        goto exit;
-    }
-
-    if (!init_mq(packet_params, if_name)) {
         ret = EXIT_FAILURE;
         goto exit;
     }
@@ -174,7 +296,6 @@ static int execute(const exec_option_config_t *config, const char *if_name,
 
 err_free:
     config->free_exec();
-    free_mq();
 exit:
     return ret;
 }

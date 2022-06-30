@@ -28,11 +28,84 @@
 
 #include "common.h"
 #include "printstats.h"
-#include "mq_common.h"
-#include "printstats/mq_interface.h"
+
+#if !USE_UBUS
+#    include <libubus.h>
+#    include <libubox/uloop.h>
+#    include <libubox/blobmsg_json.h>
+#    include <libubox/ustream.h>
+#    include "ipc/ubus/ubus_binary_helper.h"
+#    include "ipc/ubus/ubus_common.h"
+#else
+#    include "ipc/mq/mq_common.h"
+#    include "ipc/mq/mq_interface_subscriber.h"
+#endif
 
 #define PROGRAM_NAME "print-stats"
 
+#if !USE_UBUS
+static struct ubus_context *ctx;
+static struct blob_buf b;
+static msg_reply_t reply;
+
+static struct ubus_object sub_client_object = {};
+
+static int get_stats(packet_params_t *params, statistics_t *stats, char *ifname)
+{
+    struct ubus_request req;
+    uint32_t id;
+    int ret;
+
+    ret = ubus_add_object(ctx, &sub_client_object);
+    if (ret) {
+        fprintf(stderr, "Failed to add_object object: %s\n",
+                ubus_strerror(ret));
+        return;
+    }
+
+    if (ubus_lookup_id(ctx, "stats", &id)) {
+        fprintf(stderr, "Failed to look up stats object\n");
+        return;
+    }
+
+    blob_buf_init(&b, 0);
+    // blobmsg_add_u32(&b, "id", sub_client_object.id);
+    ubus_invoke(ctx, id, "get", b.head, (char *)&reply, 0, 3000);
+
+    uloop_run();
+}
+
+static int execute()
+{
+    const char *ubus_socket = NULL;
+    int ret = EXIT_SUCCESS;
+    statistics_t stats;
+    packet_params_t params;
+    char ifname[IF_NAMESIZE];
+
+    uloop_init();
+
+    ctx = ubus_connect(ubus_socket);
+    if (!ctx) {
+        fprintf(stderr, "Failed to connect to ubus\n");
+        return EXIT_FAILURE;
+    }
+
+    ubus_add_uloop(ctx);
+
+    if (get_stats(&params, &stats, ifname)) {
+        printparams(params, ifname);
+        printstats(stats);
+    } else {
+        ret = EXIT_FAILURE;
+    }
+
+    ubus_free(ctx);
+    uloop_done();
+
+    return ret;
+}
+#else
 static int execute()
 {
     int ret = EXIT_SUCCESS;
@@ -40,21 +113,22 @@ static int execute()
     packet_params_t params;
     char ifname[IF_NAMESIZE];
 
-    if (!init_mq(MQ_SINGLE_PROV_NAME)) {
+    if (!init_mq_sub(MQ_SINGLE_PROV_NAME)) {
         return EXIT_FAILURE;
     }
 
     if (!get_stats(&params, &stats, ifname)) {
-        free_mq();
+        free_mq_sub();
         return EXIT_FAILURE;
     }
 
     printparams(params, ifname);
     printstats(stats);
 
-    free_mq();
+    free_mq_sub();
     return EXIT_SUCCESS;
 }
+#endif
 
 int main(int argc, char *argv[])
 {

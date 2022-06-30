@@ -4,7 +4,7 @@
  * file LICENSE or http://www.opensource.org/licenses/mit-license.php.
  */
 
-#include "udpsniff/mq_interface.h"
+#include "ipc/mq/mq_interface_provider.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -16,7 +16,7 @@
 #include <fcntl.h>
 
 #include "common.h"
-#include "mq_common.h"
+#include "ipc/mq/mq_common.h"
 
 #define MAX_PENDING_REQ 10
 
@@ -24,7 +24,7 @@ static uint8_t inited = 0;
 static mqd_t mqd_provider; /* MQ to read requests for stats */
 static msg_request_t last_req;
 
-int init_mq(packet_params_t params, const char *ifname)
+int init_mq_prov(packet_params_t params, const char *ifname)
 {
     if (inited) {
         return 0;
@@ -49,7 +49,7 @@ int init_mq(packet_params_t params, const char *ifname)
     return 1;
 }
 
-void free_mq()
+void free_mq_prov()
 {
     if (inited) {
         mq_close(mqd_provider);
@@ -70,7 +70,7 @@ int check_request()
         return 0;
     } else if (ret < 0) { /* something really bad */
         perror("mq_receive");
-        free_mq();
+        free_mq_prov();
         exit(EXIT_FAILURE);
     }
 

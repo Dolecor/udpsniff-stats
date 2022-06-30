@@ -4,7 +4,7 @@
  * file LICENSE or http://www.opensource.org/licenses/mit-license.php.
  */
 
-#include "printstats/mq_interface.h"
+#include "ipc/mq/mq_interface_subscriber.h"
 
 #include <unistd.h>
 #include <string.h>
@@ -16,14 +16,14 @@
 #include <fcntl.h>
 
 #include "common.h"
-#include "mq_common.h"
+#include "ipc/mq/mq_common.h"
 
 static uint8_t inited = 0;
 static char mq_reply_name[MQ_REPLY_NAME_SIZE];
 static mqd_t mqd_provider; /* MQ to send request to provider */
 static mqd_t mqd_reply;    /* MQ that provider should use to send reply */
 
-int init_mq(const char *mq_provider_name)
+int init_mq_sub(const char *mq_provider_name)
 {
     if (inited) {
         return 0;
@@ -52,7 +52,7 @@ int init_mq(const char *mq_provider_name)
     return 1;
 }
 
-void free_mq()
+void free_mq_sub()
 {
     if (inited) {
         mq_close(mqd_provider);

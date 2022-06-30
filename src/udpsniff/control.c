@@ -6,11 +6,18 @@
 
 #include "control.h"
 
+#if USE_UBUS
+#    include <libubus.h>
+#endif
+
 volatile sig_atomic_t stop_flag = 0;
 
 void stop_handler(int sig)
 {
     stop_flag = 1;
+#if USE_UBUS
+    uloop_end();
+#endif
 }
 
 int set_signals()
